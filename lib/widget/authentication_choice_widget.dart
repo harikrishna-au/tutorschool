@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:tutorschool/widget/registration/details_registration_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:tutorschool/widget/registration/education_details_widget.dart';
+
+import '../global_state.dart';
+import '../utils/appconfig.dart';
+import 'package:tutorschool/widget/registration/details_registration_page.dart';
+
+import 'home_page_widget.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,10 +36,10 @@ class _AuthenticationChoiceState extends State<AuthenticationChoice> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green, // Green background
+        backgroundColor: Colors.green,
         title: Text(
           'TutorSchool',
-          style: TextStyle(color: Colors.white), // White text
+          style: TextStyle(color: Colors.white),
         ),
         elevation: 0,
       ),
@@ -43,23 +50,7 @@ class _AuthenticationChoiceState extends State<AuthenticationChoice> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: AuthenticationWidget(
-                onTeacherSelected: () {
-                  setState(() {
-                    isTeacherSelected = true;
-                  });
-                },
-                onParentSelected: () {
-                  setState(() {
-                    isTeacherSelected = false;
-                  });
-                },
-              ),
-            ),
-            SizedBox(height: 40),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: isTeacherSelected ? TutorSignupWidget() : ParentSignupWidget(),
+              child: TutorSignupWidget(),
             ),
           ],
         ),
@@ -67,120 +58,6 @@ class _AuthenticationChoiceState extends State<AuthenticationChoice> {
     );
   }
 }
-
-class AuthenticationWidget extends StatefulWidget {
-  final VoidCallback onTeacherSelected;
-  final VoidCallback onParentSelected;
-
-  AuthenticationWidget({
-    required this.onTeacherSelected,
-    required this.onParentSelected,
-  });
-
-  @override
-  _AuthenticationWidgetState createState() => _AuthenticationWidgetState();
-}
-
-class _AuthenticationWidgetState extends State<AuthenticationWidget> {
-  double _dragPosition = 0.0;
-  bool _isTeacherSide = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width * 0.8;
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Background container with gradient and labels
-        Container(
-          width: width,
-          height: 60,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.green.shade700, Colors.green.shade400],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.green.shade900.withOpacity(0.2),
-                blurRadius: 10,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-        ),
-        // Text to indicate choice
-        Text(
-          _isTeacherSide ? "Teacher" : "Parent",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        // Draggable button
-        Positioned(
-          left: _dragPosition,
-          child: GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _dragPosition += details.delta.dx;
-                _dragPosition = _dragPosition.clamp(0.0, width - 60);
-              });
-            },
-            onPanEnd: (details) {
-              if (_dragPosition <= (width - 60) / 2) {
-                setState(() {
-                  _dragPosition = 0.0; // Snap to Teacher side
-                  _isTeacherSide = true;
-                });
-                widget.onTeacherSelected();
-              } else {
-                setState(() {
-                  _dragPosition = width - 60; // Snap to Parent side
-                  _isTeacherSide = false;
-                });
-                widget.onParentSelected();
-              }
-            },
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: Offset(0, 5),
-                  ),
-                  BoxShadow(
-                    color: Colors.blue.shade300,
-                    blurRadius: 5,
-                    offset: Offset(-2, -2),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Icon(
-                _isTeacherSide ? Icons.school : Icons.family_restroom,
-                color: Colors.white,
-                size: 30,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 
 class TutorSignupWidget extends StatefulWidget {
   @override
@@ -192,42 +69,109 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
   bool isOtpSent = false;
   String phoneNumber = '';
   String otp = '';
+  String password = '';
+
+  String generateAccessHash(String phone, String otp) {
+    final secretKey = 'YourSecretKey'; // Use a secure, private key
+    final combinedString = '$phone|$otp|$secretKey';
+    final bytes = utf8.encode(combinedString);
+    final hash = sha256.convert(bytes);
+    return hash.toString();
+  }
+
+  void showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Error',
+            style: TextStyle(color: Colors.red),
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'OK',
+                style: TextStyle(color: Colors.green),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> sendOtp(String phone) async {
-    final response = await http.post(
-      Uri.parse('https://api.tutorschool.in/auth/teacher/verify'), // Replace with actual API URL
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'phone': phone}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.start), // Use config for endpoint
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'phone': phone}),
+      );
 
-    if (response.statusCode == 200) {
-      setState(() {
-        isOtpSent = true;
-      });
-      print("OTP Sent");
-    } else {
-      // Handle error, show error message to the user
-      print("Failed to send OTP");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['message'] == 'otp sent successfully') {
+          setState(() {
+            isOtpSent = true;
+          });
+          print("OTP Sent: ${data['otp']}");
+        } else {
+          showErrorDialog("Unexpected response: ${data['message']}");
+        }
+      } else {
+        showErrorDialog(
+            "Failed to send OTP. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      showErrorDialog("Error sending OTP: $e");
     }
   }
 
   Future<void> verifyOtp(String phone, String otp) async {
-    final response = await http.post(
-      Uri.parse('https://api.tutorschool.in/auth/teacher/google'), // Replace with actual verify OTP URL
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'phone': phone, 'otp': otp}),
-    );
+    final accessHash = generateAccessHash(phone, otp);
+    try {
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.verify), // Use config for endpoint
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(
+            {'phone': phone, 'otp': otp, 'access_hash': accessHash}),
+      );
 
-    if (response.statusCode == 200) {
-      // Handle success, navigate to the next screen
-      print("OTP Verified");
-    } else {
-      // Handle error, show error message to the user
-      print("Failed to verify OTP");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['message'] == 'phone verified successfully') {
+          GlobalData.accessHash = data['access_hash']; // Save the access hash globally
+          print("OTP Verified successfully");
+          print("Access Hash: ${GlobalData.accessHash}");
+          print("Key to get: ${data['key_to_get']}");
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailsRegistrationWidget(),
+            ),
+          );
+        }
+        else {
+          showErrorDialog('Invalid OTP. Please try again.');
+        }
+      } else {
+        showErrorDialog(
+            'Failed to verify OTP. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      showErrorDialog('An error occurred. Please try again.');
     }
   }
 
@@ -267,10 +211,26 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
                 borderRadius: BorderRadius.circular(10),
               ),
               hintText: 'Enter your phone number',
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 14),
             ),
           ),
-          if (isOtpSent) ...[
+          if (!showSignUp) ...[
+            SizedBox(height: 20),
+            TextField(
+              obscureText: true,
+              onChanged: (value) => password = value,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                hintText: 'Enter Password',
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+              ),
+            ),
+          ],
+          if (isOtpSent && showSignUp) ...[
             SizedBox(height: 20),
             TextField(
               keyboardType: TextInputType.number,
@@ -280,7 +240,8 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 hintText: 'Enter OTP',
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
               ),
             ),
           ],
@@ -289,10 +250,14 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                if (isOtpSent) {
-                  verifyOtp(phoneNumber, otp);
+                if (showSignUp) {
+                  if (isOtpSent) {
+                    verifyOtp(phoneNumber, otp);
+                  } else {
+                    sendOtp(phoneNumber);
+                  }
                 } else {
-                  sendOtp(phoneNumber);
+                  login(phoneNumber, password);
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -303,7 +268,7 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
                 ),
               ),
               child: Text(
-                isOtpSent ? 'Verify OTP' : 'Send OTP',
+                showSignUp ? (isOtpSent ? 'Verify OTP' : 'Send OTP') : 'Login',
                 style: TextStyle(fontSize: 18, color: Colors.white),
               ),
             ),
@@ -314,7 +279,7 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
               onPressed: () {
                 setState(() {
                   showSignUp = !showSignUp;
-                  isOtpSent = false; // Reset OTP flow on mode switch
+                  isOtpSent = false;
                 });
               },
               child: Text(
@@ -333,116 +298,60 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
       ),
     );
   }
-}
 
-class ParentSignupWidget extends StatefulWidget {
-  @override
-  _ParentSignupWidgetState createState() => _ParentSignupWidgetState();
-}
+  Future<void> login(String phone, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.login),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'phone': phone, 'password': password}),
+      );
 
-class _ParentSignupWidgetState extends State<ParentSignupWidget> {
-  bool showSignUp = true;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center, // Center all content
-        children: [
-          Text(
-            showSignUp ? 'Parent Signup' : 'Parent Login',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold, // Bold style for the title
-              color: Colors.green.shade800,
-            ),
-          ),
-          SizedBox(height: 24),
-          TextField(
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+        if (data['message'] == 'Teacher logged in successfully') {
+          // Store the fetched data globally
+          GlobalData.jwtToken = data['jwt_token'];
+          GlobalData.goToDashboard = data['go_to_dashboard'];
+          GlobalData.model = data['model'];
+
+          // Update teacher details
+          if (data['teacher'] != null) {
+            GlobalData.teacher.updateTeacher(data['teacher']);
+          }
+
+          print("Login Successful");
+          print("JWT Token: ${GlobalData.jwtToken}");
+          print("Teacher Name: ${GlobalData.teacher.name}");
+
+          // Navigate to the dashboard or other relevant screen
+          if (GlobalData.goToDashboard) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) =>
+                  DashboardWidget()), // Example navigation
+            );
+          } else {
+            showErrorDialog("You need to complete onboarding.");
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EducationDetails(),
               ),
-              hintText: 'Enter your phone number',
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-          ),
-          if (!showSignUp) ...[
-            SizedBox(height: 20),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                hintText: 'Enter your password',
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              ),
-            ),
-          ],
-          SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                if (showSignUp) {
-                  print("Parent OTP Sent");
-                } else {
-                  print("Parent Login Submitted");
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade600,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                showSignUp ? 'Send OTP' : 'Sign In',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-          ),
-          SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: () {
-                setState(() {
-                  showSignUp = !showSignUp;
-                });
-              },
-              child: Text(
-                showSignUp
-                    ? 'Already have an account? Sign In here'
-                    : 'Don’t have an account? Sign Up here',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.green.shade800,
-                  fontWeight: FontWeight.bold, // Bold text for link
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+            );
+          }
+        } else {
+          showErrorDialog("Login failed: ${data['message']}");
+        }
+      } else {
+        showErrorDialog('Failed to login. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      showErrorDialog('An error occurred during login: $e');
+    }
   }
-
-
 
 }

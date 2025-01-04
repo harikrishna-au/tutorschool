@@ -37,7 +37,10 @@ dependencies:
   latlong2: ^0.9.1
   slider_button: ^2.1.0
   flutter_map_cancellable_tile_provider: ^3.0.2
-  
+  crypto: ^3.0.6
+  geocoding: ^3.0.0
+
+
 
 
   # The following adds the Cupertino Icons font to your application.

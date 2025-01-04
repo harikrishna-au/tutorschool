@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:tutorschool/widget/registration/subscriptions_widget.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationPickerWidget extends StatefulWidget {
   final bool isTeacher;
@@ -14,50 +12,78 @@ class LocationPickerWidget extends StatefulWidget {
 }
 
 class _LocationPickerWidgetState extends State<LocationPickerWidget> {
-  final TextEditingController countryController = TextEditingController();
+  final TextEditingController areaController = TextEditingController();
   final TextEditingController stateController = TextEditingController();
-  final TextEditingController cityController = TextEditingController();
   final TextEditingController pincodeController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
 
+  late GoogleMapController _mapController;
   LatLng _currentLocation = LatLng(22.5726, 88.3639);
-
-  final _locationFormKey = GlobalKey<FormState>();
-  final MapController _mapController = MapController();
+  double _currentZoom = 10.0; // Track the current zoom level
 
   @override
   void dispose() {
-    countryController.dispose();
+    areaController.dispose();
     stateController.dispose();
-    cityController.dispose();
     pincodeController.dispose();
-    addressController.dispose();
     super.dispose();
   }
 
   void _saveLocation() {
-    if (_locationFormKey.currentState!.validate()) {
-      Map<String, dynamic> locationData = {
-        'country': countryController.text,
-        'state': stateController.text,
-        'city': cityController.text,
-        'pincode': pincodeController.text,
-        'address': addressController.text,
-        'latitude': _currentLocation.latitude,
-        'longitude': _currentLocation.longitude,
-      };
+    Map<String, dynamic> locationData = {
+      'area': areaController.text,
+      'state': stateController.text,
+      'pincode': pincodeController.text,
+      'latitude': _currentLocation.latitude,
+      'longitude': _currentLocation.longitude,
+    };
 
-      print('Location Data: $locationData');
+    print('Location Data: $locationData');
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Location saved successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Future<void> _zoomToArea(String area) async {
+    try {
+      List<Location> locations = await locationFromAddress(area);
+      if (locations.isNotEmpty) {
+        final targetLocation = locations.first;
+        setState(() {
+          _currentLocation = LatLng(targetLocation.latitude, targetLocation.longitude);
+        });
+        _mapController.animateCamera(CameraUpdate.newLatLng(_currentLocation));
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Location saved successfully!'),
-          backgroundColor: Colors.green,
+          content: Text('Unable to locate the area. Please check the name.'),
+          backgroundColor: Colors.red,
         ),
       );
     }
   }
 
+  void _zoomIn() {
+    setState(() {
+      _currentZoom += 1;
+    });
+    _mapController.animateCamera(CameraUpdate.newCameraPosition(
+      CameraPosition(target: _currentLocation, zoom: _currentZoom),
+    ));
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _currentZoom = (_currentZoom - 1).clamp(1.0, 18.0); // Ensure zoom stays within valid range
+    });
+    _mapController.animateCamera(CameraUpdate.newCameraPosition(
+      CameraPosition(target: _currentLocation, zoom: _currentZoom),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,54 +93,56 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         backgroundColor: Colors.green,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _locationFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildLocationInputs(),
-                    SizedBox(height: 20),
-                    _buildMapSection(),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _saveLocation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      child: Text(
-                        'Save Location',
-                        style: TextStyle(fontSize: 16),
-                      ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildLocationInputs(),
+              SizedBox(height: 20),
+              _buildMapSection(),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                    onPressed: _zoomIn,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                     ),
-                    SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate to the SubscriptionPage when the button is pressed
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SubscriptionPage()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      child: Text(
-                        'Next',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    child: Text(
+                      'Zoom In',
+                      style: TextStyle(fontSize: 16),
                     ),
-
-                  ],
+                  ),
+                  ElevatedButton(
+                    onPressed: _zoomOut,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    ),
+                    child: Text(
+                      'Zoom Out',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveLocation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                ),
+                child: Text(
+                  'Save Location',
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -124,15 +152,18 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
     return Column(
       children: [
         TextFormField(
-          controller: countryController,
+          controller: areaController,
           decoration: InputDecoration(
-            labelText: 'Country',
+            labelText: 'Area',
             border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.public),
+            prefixIcon: Icon(Icons.location_on),
           ),
+          onFieldSubmitted: (value) {
+            _zoomToArea(value);
+          },
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter country';
+              return 'Please enter area';
             }
             return null;
           },
@@ -154,21 +185,6 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         ),
         SizedBox(height: 10),
         TextFormField(
-          controller: cityController,
-          decoration: InputDecoration(
-            labelText: 'City',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.location_on),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter city';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 10),
-        TextFormField(
           controller: pincodeController,
           decoration: InputDecoration(
             labelText: 'Pincode',
@@ -179,22 +195,6 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter pincode';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 10),
-        TextFormField(
-          controller: addressController,
-          decoration: InputDecoration(
-            labelText: 'Full Address',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.home),
-          ),
-          maxLines: 3,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter full address';
             }
             return null;
           },
@@ -210,51 +210,28 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: _currentLocation,
-            initialZoom: 10.0,
-            onTap: (tapPosition, point) {
-              setState(() {
-                _currentLocation = point;
-              });
-              _mapController.move(point, 10.0);
-            },
-          ),
-          children: [
-            TileLayer(
-              tileProvider: CancellableNetworkTileProvider(),
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _currentLocation,
-                  width: 10.0,
-                  height: 10.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+      child: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: _currentLocation,
+          zoom: _currentZoom,
         ),
+        onMapCreated: (GoogleMapController controller) {
+          _mapController = controller;
+        },
+        onTap: (LatLng point) {
+          setState(() {
+            _currentLocation = point;
+          });
+          _mapController.animateCamera(CameraUpdate.newLatLng(_currentLocation));
+        },
+        markers: {
+          Marker(
+            markerId: MarkerId('currentLocation'),
+            position: _currentLocation,
+            infoWindow: InfoWindow(title: 'Current Location'),
+          ),
+        },
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _mapController.move(_currentLocation, 10.0);
-    });
   }
 }

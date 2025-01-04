@@ -8,7 +8,14 @@ void openEducationDetails(BuildContext context) {
   );
 }
 
-class EducationDetails extends StatelessWidget {
+class EducationDetails extends StatefulWidget {
+  @override
+  _EducationDetailsState createState() => _EducationDetailsState();
+}
+
+class _EducationDetailsState extends State<EducationDetails> {
+  String? selectedTeachingMode = 'Online'; // State for Teaching Mode radio buttons
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,9 +43,17 @@ class EducationDetails extends StatelessWidget {
               ),
               child: DropdownButtonFormField<String>(
                 items: [
-                  DropdownMenuItem(value: 'Bachelors', child: Text('Bachelors')),
-                  DropdownMenuItem(value: 'Masters', child: Text('Masters')),
-                  DropdownMenuItem(value: 'PhD', child: Text('PhD')),
+                  DropdownMenuItem(value: '12th or Equivalent', child: Text('12th or Equivalent')),
+                  DropdownMenuItem(value: 'B.A', child: Text('B.A')),
+                  DropdownMenuItem(value: 'B.Com', child: Text('B.Com')),
+                  DropdownMenuItem(value: 'B.Sc', child: Text('B.Sc')),
+                  DropdownMenuItem(value: 'BCA', child: Text('BCA')),
+                  DropdownMenuItem(value: 'B.Ed', child: Text('B.Ed')),
+                  DropdownMenuItem(value: 'B.Tech', child: Text('B.Tech')),
+                  DropdownMenuItem(value: 'M.A', child: Text('M.A')),
+                  DropdownMenuItem(value: 'M.Com', child: Text('M.Com')),
+                  DropdownMenuItem(value: 'MCA', child: Text('MCA')),
+                  DropdownMenuItem(value: 'Others', child: Text('Others')),
                 ],
                 onChanged: (value) {},
                 decoration: InputDecoration(
@@ -90,9 +105,11 @@ class EducationDetails extends StatelessWidget {
               ),
               child: DropdownButtonFormField<String>(
                 items: [
-                  DropdownMenuItem(value: 'Student', child: Text('Student')),
-                  DropdownMenuItem(value: 'Working', child: Text('Working')),
-                  DropdownMenuItem(value: 'Other', child: Text('Other')),
+                  DropdownMenuItem(value: 'College Student', child: Text('College Student')),
+                  DropdownMenuItem(value: 'Job Aspirant', child: Text('Job Aspirant')),
+                  DropdownMenuItem(value: 'Full time Teacher', child: Text('Full time Teacher')),
+                  DropdownMenuItem(value: 'Working Professional', child: Text('Working Professional')),
+                  DropdownMenuItem(value: 'Educated Housewife', child: Text('Educated Housewife')),
                 ],
                 onChanged: (value) {},
                 decoration: InputDecoration(
@@ -124,24 +141,36 @@ class EducationDetails extends StatelessWidget {
                     child: RadioListTile<String>(
                       title: Text('Online'),
                       value: 'Online',
-                      groupValue: 'teachingMode',
-                      onChanged: (value) {},
+                      groupValue: selectedTeachingMode,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedTeachingMode = value;
+                        });
+                      },
                     ),
                   ),
                   Expanded(
                     child: RadioListTile<String>(
                       title: Text('Offline'),
                       value: 'Offline',
-                      groupValue: 'teachingMode',
-                      onChanged: (value) {},
+                      groupValue: selectedTeachingMode,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedTeachingMode = value;
+                        });
+                      },
                     ),
                   ),
                   Expanded(
                     child: RadioListTile<String>(
                       title: Text('Both'),
                       value: 'Both',
-                      groupValue: 'teachingMode',
-                      onChanged: (value) {},
+                      groupValue: selectedTeachingMode,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedTeachingMode = value;
+                        });
+                      },
                     ),
                   ),
                 ],
@@ -166,8 +195,10 @@ class EducationDetails extends StatelessWidget {
               child: DropdownButtonFormField<String>(
                 items: [
                   DropdownMenuItem(value: 'Social Media', child: Text('Social Media')),
-                  DropdownMenuItem(value: 'Friend', child: Text('Friend')),
+                  DropdownMenuItem(value: 'Friend/Family', child: Text('Friend/Family')),
+                  DropdownMenuItem(value: 'Search Engine', child: Text('Search Engine')),
                   DropdownMenuItem(value: 'Advertisement', child: Text('Advertisement')),
+                  DropdownMenuItem(value: 'Other', child: Text('Other')),
                 ],
                 onChanged: (value) {},
                 decoration: InputDecoration(
