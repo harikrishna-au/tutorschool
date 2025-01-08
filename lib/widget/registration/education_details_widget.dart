@@ -1,238 +1,300 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../global_state.dart';
+import '../../utils/appconfig.dart';
 import 'add_location_widget.dart';
 
-void openEducationDetails(BuildContext context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => EducationDetails()),
-  );
-}
+enum CurrentStatus { jobless, student, teacher, professional, housewife }
+enum TeachingMode { online, offline, both }
 
 class EducationDetails extends StatefulWidget {
+  const EducationDetails({super.key});
+
   @override
-  _EducationDetailsState createState() => _EducationDetailsState();
+  State<EducationDetails> createState() => _EducationDetailsState();
 }
 
 class _EducationDetailsState extends State<EducationDetails> {
-  String? selectedTeachingMode = 'Online'; // State for Teaching Mode radio buttons
+  String selectedTeachingMode = 'Online';
+  String? selectedDegree;
+  String? selectedUniversity;
+  String? selectedCurrentStatus;
+  String? selectedReferral;
+  final _universityController = TextEditingController();
+
+  @override
+  void dispose() {
+    _universityController.dispose();
+    super.dispose();
+  }
+
+  Future<void> sendDataToAPI() async {
+    if (selectedDegree == null ||
+        selectedUniversity == null ||
+        selectedCurrentStatus == null ||
+        selectedTeachingMode.isEmpty ||
+        selectedReferral == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    String jwtToken = GlobalData.jwtToken;
+
+    final data = {
+      'degree': selectedDegree,
+      'university': selectedUniversity?.trim(),
+      'current_status': currentStatusFromString(selectedCurrentStatus),
+      'teaching_mode': teachingModeFromString(selectedTeachingMode),
+      'referral': selectedReferral,
+    };
+
+    print("Sending data: $data");
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.basic),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $jwtToken',
+        },
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        print('Data sent successfully: ${response.body}');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LocationPickerWidget(
+              isTeacher: true,
+            ),
+          ),
+        );
+      } else {
+        print('Failed to send data: ${response.statusCode}, ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send data: ${response.statusCode} - ${response.body}')), // Include response body
+        );
+      }
+    } catch (e) {
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
+    }
+  }
+
+  String currentStatusFromString(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'JOB ASPIRANT':
+        return 'JOBLESS';
+      case 'COLLEGE STUDENT':
+        return 'STUDENT';
+      case 'FULL TIME TEACHER':
+        return 'TEACHER';
+      case 'WORKING PROFESSIONAL':
+        return 'PROFESSIONAL';
+      case 'EDUCATED HOUSEWIFE':
+        return 'HOUSEWIFE';
+      default:
+        return 'JOBLESS'; // Default case
+    }
+  }
+
+  String teachingModeFromString(String mode) {
+    switch (mode.toUpperCase()) {
+      case 'ONLINE':
+        return 'ONLINE';
+      case 'OFFLINE':
+        return 'OFFLINE';
+      case 'BOTH':
+        return 'BOTH';
+      default:
+        return 'ONLINE'; // Default case
+    }
+  }
+
+  Widget _buildDropdown({
+    required String labelText,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+    required List<String> items,
+  }) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: DropdownButtonFormField<String>(
+        decoration: InputDecoration(
+          labelText: labelText,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        value: value,
+        onChanged: onChanged,
+        items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String labelText,
+    required TextEditingController controller,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: labelText,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildTeachingMode() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Text(
+              'Teaching Mode *',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+            ),
+          ),
+          Row(
+            children: [
+              _buildRadio('Online', selectedTeachingMode),
+              _buildRadio('Offline', selectedTeachingMode),
+              _buildRadio('Both', selectedTeachingMode),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRadio(String title, String groupValue) {
+    return Expanded(
+      child: RadioListTile<String>(
+        title: Text(title),
+        value: title,
+        groupValue: groupValue,
+        onChanged: (value) {
+          setState(() {
+            selectedTeachingMode = value!;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildReferralDropdown() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: DropdownButtonFormField<String>(
+        decoration: InputDecoration(
+          labelText: 'Referral (optional)',
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+        value: selectedReferral,
+        onChanged: (value) {
+          setState(() {
+            selectedReferral = value;
+          });
+        },
+        items: const [
+          'Social Media',
+          'Friend/Family',
+          'Search Engine',
+          'Advertisement',
+          'Other',
+        ]
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Education Details'),
+        title: const Text('Education Details'),
         backgroundColor: Colors.green,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            // Highest Qualification
-            Text(
-              'Highest Qualification *',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: DropdownButtonFormField<String>(
-                items: [
-                  DropdownMenuItem(value: '12th or Equivalent', child: Text('12th or Equivalent')),
-                  DropdownMenuItem(value: 'B.A', child: Text('B.A')),
-                  DropdownMenuItem(value: 'B.Com', child: Text('B.Com')),
-                  DropdownMenuItem(value: 'B.Sc', child: Text('B.Sc')),
-                  DropdownMenuItem(value: 'BCA', child: Text('BCA')),
-                  DropdownMenuItem(value: 'B.Ed', child: Text('B.Ed')),
-                  DropdownMenuItem(value: 'B.Tech', child: Text('B.Tech')),
-                  DropdownMenuItem(value: 'M.A', child: Text('M.A')),
-                  DropdownMenuItem(value: 'M.Com', child: Text('M.Com')),
-                  DropdownMenuItem(value: 'MCA', child: Text('MCA')),
-                  DropdownMenuItem(value: 'Others', child: Text('Others')),
-                ],
-                onChanged: (value) {},
-                decoration: InputDecoration(
-                  hintText: 'Select your qualification',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-            ),
-            SizedBox(height: 16.0),
-
-            // University
-            Text(
-              'University *',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: TextFormField(
-                decoration: InputDecoration(
-                  hintText: 'Enter your college name',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-            ),
-            SizedBox(height: 16.0),
-
-            // Current Status
-            Text(
-              'Current Status*',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: DropdownButtonFormField<String>(
-                items: [
-                  DropdownMenuItem(value: 'College Student', child: Text('College Student')),
-                  DropdownMenuItem(value: 'Job Aspirant', child: Text('Job Aspirant')),
-                  DropdownMenuItem(value: 'Full time Teacher', child: Text('Full time Teacher')),
-                  DropdownMenuItem(value: 'Working Professional', child: Text('Working Professional')),
-                  DropdownMenuItem(value: 'Educated Housewife', child: Text('Educated Housewife')),
-                ],
-                onChanged: (value) {},
-                decoration: InputDecoration(
-                  hintText: 'Select your current status',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-              ),
-            ),
-            SizedBox(height: 16.0),
-
-            // Teaching Mode
-            Text(
-              'Teaching Mode *',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text('Online'),
-                      value: 'Online',
-                      groupValue: selectedTeachingMode,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedTeachingMode = value;
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text('Offline'),
-                      value: 'Offline',
-                      groupValue: selectedTeachingMode,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedTeachingMode = value;
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text('Both'),
-                      value: 'Both',
-                      groupValue: selectedTeachingMode,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedTeachingMode = value;
-                        });
-                      },
-                    ),
-                  ),
+        child: Form(
+          child: ListView(
+            children: [
+              _buildDropdown(
+                labelText: 'Highest Qualification *',
+                value: selectedDegree,
+                onChanged: (value) => setState(() => selectedDegree = value),
+                items: const [
+                  '12th or Equivalent',
+                  'B.A',
+                  'B.Com',
+                  'B.Sc',
+                  'BCA',
+                  'B.Ed',
+                  'B.Tech',
+                  'M.A',
+                  'M.Com',
+                  'MCA',
+                  'Others',
                 ],
               ),
-            ),
-            SizedBox(height: 16.0),
-
-            // How did you hear about us?
-            Text(
-              'How did you hear about us? *',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black87,
+              const SizedBox(height: 16.0),
+              _buildTextField(
+                labelText: 'University *',
+                controller: _universityController,
+                onChanged: (value) => selectedUniversity = value,
               ),
-            ),
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: DropdownButtonFormField<String>(
-                items: [
-                  DropdownMenuItem(value: 'Social Media', child: Text('Social Media')),
-                  DropdownMenuItem(value: 'Friend/Family', child: Text('Friend/Family')),
-                  DropdownMenuItem(value: 'Search Engine', child: Text('Search Engine')),
-                  DropdownMenuItem(value: 'Advertisement', child: Text('Advertisement')),
-                  DropdownMenuItem(value: 'Other', child: Text('Other')),
+              const SizedBox(height: 16.0),
+              _buildDropdown(
+                labelText: 'Current Status *',
+                value: selectedCurrentStatus,
+                onChanged: (value) => setState(() => selectedCurrentStatus = value),
+                items: const [
+                  'College Student',
+                  'Job Aspirant',
+                  'Full time Teacher',
+                  'Working Professional',
+                  'Educated Housewife',
                 ],
-                onChanged: (value) {},
-                decoration: InputDecoration(
-                  hintText: 'Select source',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
               ),
-            ),
-            SizedBox(height: 24.0),
-
-            // Next Button
-            ElevatedButton(
-              onPressed: () {
-                // Navigate to Location Picker Widget
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LocationPickerWidget(
-                      isTeacher: true, // Pass the required parameter
-                    ),
+              const SizedBox(height: 16.0),
+              _buildReferralDropdown(),
+              const SizedBox(height: 16.0),
+              _buildTeachingMode(),
+              const SizedBox(height: 32.0),
+              ElevatedButton(
+                onPressed: sendDataToAPI,
+                child: const Text('Submit'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                );
-              },
-              child: Text('Next'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                minimumSize: Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

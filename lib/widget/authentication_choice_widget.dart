@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:tutorschool/widget/registration/add_location_widget.dart';
 import 'package:tutorschool/widget/registration/education_details_widget.dart';
 
 import '../global_state.dart';
@@ -298,7 +299,6 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
       ),
     );
   }
-
   Future<void> login(String phone, String password) async {
     try {
       final response = await http.post(
@@ -313,35 +313,71 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
         final data = jsonDecode(response.body);
 
         if (data['message'] == 'Teacher logged in successfully') {
-          // Store the fetched data globally
-          GlobalData.jwtToken = data['jwt_token'];
-          GlobalData.goToDashboard = data['go_to_dashboard'];
-          GlobalData.model = data['model'];
+          // Store the JWT Token and other global data
+          GlobalData.jwtToken = data['jwt_token'] ?? '';
+          GlobalData.goToDashboard = data['go_to_dashboard'] ?? false;
+          GlobalData.model = data['model'] ?? '';
 
-          // Update teacher details
+          // Update the Teacher instance in GlobalData
           if (data['teacher'] != null) {
             GlobalData.teacher.updateTeacher(data['teacher']);
           }
 
-          print("Login Successful");
+          // Print stored data
+          print("Stored Global Data:");
           print("JWT Token: ${GlobalData.jwtToken}");
-          print("Teacher Name: ${GlobalData.teacher.name}");
+          print("Go To Dashboard: ${GlobalData.goToDashboard}");
+          print("Model: ${GlobalData.model}");
+          print("Teacher Details:");
+          print("Zoho ID: ${GlobalData.teacher.zohoId}");
+          print("ID: ${GlobalData.teacher.id}");
+          print("Name: ${GlobalData.teacher.name}");
+          print("Phone Contact: ${GlobalData.teacher.phoneContact}");
+          print("Secondary Contact: ${GlobalData.teacher.secondaryContact}");
+          print("Email: ${GlobalData.teacher.email}");
+          print("Created At: ${GlobalData.teacher.createdAt}");
+          print("State: ${GlobalData.teacher.state}");
+          print("Area: ${GlobalData.teacher.area}");
+          print("Pincode: ${GlobalData.teacher.pincode}");
+          print("Location: ${GlobalData.teacher.location}");
+          print("Subscription Validity: ${GlobalData.teacher.subscriptionValidity}");
+          print("Password Last Modified: ${GlobalData.teacher.passwordLastModified}");
+          print("Profile Pic: ${GlobalData.teacher.profilePic}");
+          print("Introduction: ${GlobalData.teacher.introduction}");
+          print("Teaching Description: ${GlobalData.teacher.teachingDesc}");
+          print("Video URL: ${GlobalData.teacher.videoUrl}");
+          print("Lesson Price: ${GlobalData.teacher.lessonPrice}");
+          print("Current Status: ${GlobalData.teacher.currentStatus}");
+          print("Teaching Mode: ${GlobalData.teacher.teachingMode}");
+          print("Referral: ${GlobalData.teacher.referral}");
+          print("Basic Done: ${GlobalData.teacher.basicDone}");
+          print("Location Done: ${GlobalData.teacher.locationDone}");
+          print("Later Onboarding Done: ${GlobalData.teacher.laterOnboardingDone}");
 
-          // Navigate to the dashboard or other relevant screen
-          if (GlobalData.goToDashboard) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) =>
-                  DashboardWidget()), // Example navigation
-            );
-          } else {
-            showErrorDialog("You need to complete onboarding.");
+          // Check if location is available, if not, navigate to LocationPickerWidget
+          if (GlobalData.teacher.location == null || GlobalData.teacher.location.isEmpty) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => EducationDetails(),
+                builder: (context) => const LocationPickerWidget(
+                  isTeacher: true,
+                ),
               ),
             );
+          } else {
+            // Navigate to the appropriate screen
+            if (GlobalData.goToDashboard) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => DashboardWidget()),
+              );
+            } else {
+              showErrorDialog("You need to complete onboarding.");
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => EducationDetails()),
+              );
+            }
           }
         } else {
           showErrorDialog("Login failed: ${data['message']}");
@@ -355,3 +391,7 @@ class _TutorSignupWidgetState extends State<TutorSignupWidget> {
   }
 
 }
+
+
+
+
