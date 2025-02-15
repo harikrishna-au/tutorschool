@@ -1,4 +1,4 @@
-  import 'dart:js_interop';
+  import 'dart:io' if (dart.library.js) 'dart:js_interop';
   import 'package:tutorschool/global_state.dart';
   import 'package:flutter/material.dart';
   import 'package:flutter_map/flutter_map.dart';
@@ -9,7 +9,7 @@
 
 
   import '../../utils/appconfig.dart';
-import '../home_page_widget.dart';
+  import '../home_page_widget.dart';
 
   class LocationPickerWidget extends StatefulWidget {
     final bool isTeacher;

@@ -1,0 +1,54 @@
+ {
+  "project_info": {
+    "project_number": "369064005576",
+    "project_id": "tutorschool-bd188",
+    "storage_bucket": "tutorschool-bd188.firebasestorage.app"x
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:369064005576:android:d8fd9cacfd8233cca3bafd",
+        "android_client_info": {
+          "package_name": "com.tutorschool.tutorschool"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "369064005576-hdek791fl5gq35qktofqmist4tboa11t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tutorschool.tutorschool",
+            "certificate_hash": "0498b70368b40814fab78a8cc49e496c66ac65b8"
+          }
+        },
+        {
+          "client_id": "369064005576-ltelbmp7v47f5ttcop4tphk3h2b5r8dr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaDoV7WcT2aC_3oSUOiMXst9-W1mXm3eE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "369064005576-ltelbmp7v47f5ttcop4tphk3h2b5r8dr.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "369064005576-delohsl7600livp06ppp9jeqtddanimn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tutorschool.tutorschool"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,6 +8,7 @@
       static const String verify = '$baseUrl/verify';
       static const String login  ='$baseUrl/login';
       static const String create ='$baseUrl/create';
+      static const String google  ='$baseUrl/google';
       static const String location = '$onBoardingUrl/location';
       static const String basic = '$onBoardingUrl/basic';
     }

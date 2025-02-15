@@ -1,124 +1,332 @@
 import 'package:flutter/material.dart';
+import 'package:tutorschool/widget/registration/subscriptions_widget.dart';
 import '../global_state.dart';
+import 'authentication_choice_widget.dart'; // Import the AuthenticationChoiceWidget
 
 class DashboardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    // Access the teacher data from the global instance
+    final teacher = GlobalData.teacher;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dashboard"),
-        backgroundColor: Colors.green.shade600,
+        title: Text(
+          'Tutor School',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.green.shade300,
+        elevation: 10,
+        shadowColor: Colors.green.withOpacity(0.5),
         actions: [
           IconButton(
-            icon: Icon(Icons.exit_to_app),
+            icon: Icon(Icons.notifications, color: Colors.white),
             onPressed: () {
-              // Handle log out functionality here
-              logOut(context);
+              // Handle notifications
             },
           ),
+          SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () {
+              // Handle subscription
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => SubscriptionPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              elevation: 5,
+            ),
+            child: Text(
+              'Get Subscription',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () {
+              // Handle logout
+              handleLogout(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              elevation: 5,
+            ),
+            child: Text(
+              'Logout',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          SizedBox(width: 8),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Welcome, ${GlobalData.teacher.name}",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade800,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text("Email: ${GlobalData.teacher.email}"),
-            Text("Phone: ${GlobalData.teacher.phoneContact}"),
-            Text("Teaching Mode: ${GlobalData.teacher.teachingMode}"),
-            Text("Lesson Price: ${GlobalData.teacher.lessonPrice}"),
-            Text("Profile Created At: ${GlobalData.teacher.createdAt}"),
-            SizedBox(height: 16),
-            Text("Profile Information"),
-            SizedBox(height: 8),
-            Text("Referral: ${GlobalData.teacher.referral ?? 'Not available'}"),
-            Text("State: ${GlobalData.teacher.state ?? 'Not available'}"),
-            Text("Location: ${GlobalData.teacher.location ?? 'Not available'}"),
-            SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                // Navigate to Profile Settings or any other relevant screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileSettingsWidget(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.green.shade50, Colors.white],
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Flexible(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Card(
+                                  elevation: 5,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Teacher Profile',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade800,
+                                          ),
+                                        ),
+                                        SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 30,
+                                              backgroundImage: teacher.profilePic.isNotEmpty
+                                                  ? NetworkImage(teacher.profilePic)
+                                                  : null,
+                                              child: teacher.profilePic.isEmpty
+                                                  ? Text(
+                                                teacher.name.isNotEmpty
+                                                    ? teacher.name[0]
+                                                    : 'T',
+                                                style: TextStyle(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                                  : null,
+                                              backgroundColor: Colors.green.shade300,
+                                            ),
+                                            SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    teacher.name.isNotEmpty
+                                                        ? teacher.name
+                                                        : 'No Name',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.green.shade800,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    teacher.email.isNotEmpty
+                                                        ? teacher.email
+                                                        : 'No Email',
+                                                    style: TextStyle(
+                                                      color: Colors.grey.shade700,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    teacher.phoneContact.isNotEmpty
+                                                        ? teacher.phoneContact
+                                                        : 'No Contact',
+                                                    style: TextStyle(
+                                                      color: Colors.grey.shade700,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: Card(
+                                  elevation: 5,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Subscription',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade800,
+                                          ),
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          teacher.subscriptionValidity.isNotEmpty
+                                              ? 'Valid until: ${teacher.subscriptionValidity}'
+                                              : 'No Subscription',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        ElevatedButton(
+                                          onPressed: null,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            elevation: 5,
+                                          ),
+                                          child: Text(
+                                            'Not Active',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Flexible(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Card(
+                                  elevation: 5,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.lock, size: 40, color: Colors.grey.shade600),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Session History is Locked',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: Card(
+                                  elevation: 5,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Certifications',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade800,
+                                          ),
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'Professional certifications and achievements',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          '*No Certificates*',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
-              child: Text("Edit Profile"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade600,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 
-  // Handle log out functionality
-  void logOut(BuildContext context) {
-    // Clear global data or handle any cleanup
+  void handleLogout(BuildContext context) {
+    // Clear global state
     GlobalData.jwtToken = '';
+    GlobalData.teacher = Teacher();  // Reset teacher data by creating a new Teacher object
+    GlobalData.accessHash = '';
     GlobalData.goToDashboard = false;
-    GlobalData.model = '';
-    GlobalData.teacher = Teacher(); // Reset teacher data
 
-    // Optionally navigate to login screen
+    // Navigate back to AuthenticationChoiceWidget
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => LoginScreen(),  // Replace with your actual login screen widget
-      ),
-    );
-  }
-}
-
-class ProfileSettingsWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Profile Settings"),
-        backgroundColor: Colors.green.shade600,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Edit your profile settings here", style: TextStyle(fontSize: 18)),
-            // Add form fields for profile editing
-            // E.g. TextFormField for editing the name, email, etc.
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class LoginScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Login")),
-      body: Center(
-        child: Text("Login screen will be here"),
-      ),
+      MaterialPageRoute(builder: (context) => AuthenticationChoice()),
     );
   }
 }
